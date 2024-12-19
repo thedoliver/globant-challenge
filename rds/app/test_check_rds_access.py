@@ -1,14 +1,33 @@
 import unittest
 from unittest.mock import patch, MagicMock
-from rds.app.check_rds import check_and_remove_rds_public_access
+from check_rds_public_access import authenticate_aws, check_and_remove_rds_public_access
 
 class TestCheckAndRemoveRDSPublicAccess(unittest.TestCase):
 
-    @patch('boto3.client')
-    def test_rds_public_access_removal(self, mock_boto_client):
-        # Mock the RDS client and its responses
+    @patch('boto3.session.Session')
+    def test_authenticate_aws(self, mock_boto_session):
+        # Mock the session
+        mock_session = MagicMock()
+        mock_boto_session.return_value = mock_session
+
+        with patch('builtins.input', side_effect=['fake_key', 'fake_secret', 'us-east-1']), \
+             patch('getpass.getpass', return_value='fake_secret'):
+            session = authenticate_aws()
+
+        self.assertEqual(session, mock_session)
+        mock_boto_session.assert_called_once_with(
+            aws_access_key_id='fake_key',
+            aws_secret_access_key='fake_secret',
+            region_name='us-east-1'
+        )
+
+    @patch('boto3.session.Session')
+    def test_rds_public_access_removal(self, mock_boto_session):
+        # Mock the RDS client and session
+        mock_session = MagicMock()
         mock_rds_client = MagicMock()
-        mock_boto_client.return_value = mock_rds_client
+        mock_boto_session.return_value = mock_session
+        mock_session.client.return_value = mock_rds_client
 
         # Mock describe_db_instances response
         mock_rds_client.describe_db_instances.return_value = {
@@ -25,7 +44,9 @@ class TestCheckAndRemoveRDSPublicAccess(unittest.TestCase):
         }
 
         # Call the function
-        check_and_remove_rds_public_access()
+        with patch('builtins.input', side_effect=['fake_key', 'fake_secret', 'us-east-1']), \
+             patch('getpass.getpass', return_value='fake_secret'):
+            check_and_remove_rds_public_access()
 
         # Verify modify_db_instance was called for the public instance
         mock_rds_client.modify_db_instance.assert_called_once_with(
