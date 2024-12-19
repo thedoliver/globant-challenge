@@ -4,11 +4,12 @@ FROM python:3.9-slim
 # Set the working directory inside the container
 WORKDIR /app
 
-# Copy the current directory's content to the container's working directory
-COPY . /app
+# Copy only necessary files to the container's working directory
+COPY requirements.txt /app/
+COPY app /app/
 
 # Install required Python packages
-RUN pip install -r requirements.txt
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Specify the entry point for the script
-ENTRYPOINT ["python", "check_rds.py"]
+ENTRYPOINT ["python", "/app/check_rds.py"]
