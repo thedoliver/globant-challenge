@@ -86,12 +86,12 @@ if __name__ == "__main__":
         print("\nChecking Block Public Access settings for each bucket:\n")
         for bucket in buckets:
             settings = check_block_public_access(session, bucket)
-            print("Settings:", settings)  # Debugging
+            print("Settings:", settings)  # Debugging all setting should return all True or all False
             print("Type:", type(settings))  # Debugging
             print("-" * 40)
 
             # Disable public access if any Block Public Access setting is True
-            if settings is not None and any(settings.values()):
+            if settings is not None and any(settings.values()): #Lambda Integraded function
                 print(
                     f"Public access detected for bucket '{bucket}'. "
                     f"Disabling public access..."
