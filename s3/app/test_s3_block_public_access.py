@@ -1,13 +1,26 @@
 import unittest
 from unittest.mock import patch, MagicMock
-from s3.app.s3_block_public_access import (
+from s3_block_public_access import (
     list_s3_buckets,
     check_block_public_access,
     disable_s3_public_access,
+    authenticate_aws,
 )
 
 
 class TestS3BlockPublicAccess(unittest.TestCase):
+    @patch("boto3.session.Session")
+    def test_authenticate_aws(self, mock_session):
+        """Test AWS authentication."""
+        mock_session.return_value = MagicMock()
+        with patch("builtins.input", side_effect=["fake-key", "fake-secret", "us-east-1"]):
+            session = authenticate_aws()
+            self.assertIsNotNone(session)
+            mock_session.assert_called_once_with(
+                aws_access_key_id="fake-key",
+                aws_secret_access_key="fake-secret",
+                region_name="us-east-1",
+            )
 
     @patch("boto3.client")
     def test_list_s3_buckets(self, mock_boto3_client):
@@ -54,15 +67,12 @@ class TestS3BlockPublicAccess(unittest.TestCase):
         mock_s3 = MagicMock()
         mock_boto3_client.return_value = mock_s3
 
-        # Mock check_block_public_access to simulate confirmation
-        with patch(
-            "s3_block_public_access.check_block_public_access"
-        ) as mock_check_block:
+        with patch("s3_block_public_access.check_block_public_access") as mock_check_block:
             mock_check_block.return_value = {
-                "BlockPublicAcls": True,
-                "IgnorePublicAcls": True,
-                "BlockPublicPolicy": True,
-                "RestrictPublicBuckets": True,
+                "BlockPublicAcls": False,
+                "IgnorePublicAcls": False,
+                "BlockPublicPolicy": False,
+                "RestrictPublicBuckets": False,
             }
 
             disable_s3_public_access("test-bucket")
